@@ -194,6 +194,7 @@ static const MemMapEntry base_memmap[] = {
     [VIRT_PVTIME] =             { 0x090a0000, 0x00010000 },
     [VIRT_SECURE_GPIO] =        { 0x090b0000, 0x00001000 },
     [VIRT_ACPI_PCIHP] =         { 0x090c0000, ACPI_PCIHP_SIZE },
+    [VIRT_PVDEMO] =             { 0x090d0000, 0x00010000 }, 
     [VIRT_MMIO] =               { 0x0a000000, 0x00000200 },
     /* ...repeating for a total of NUM_VIRTIO_TRANSPORTS, each of that size */
     [VIRT_PLATFORM_BUS] =       { 0x0c000000, 0x02000000 },
@@ -2137,16 +2138,19 @@ static void virt_post_cpus_gic_realized(VirtMachineState *vms,
 {
     int max_cpus = MACHINE(vms)->smp.max_cpus;
     bool aarch64, pmu, steal_time;
+    bool pvdemo;
     CPUState *cpu;
 
     aarch64 = object_property_get_bool(OBJECT(first_cpu), "aarch64", NULL);
     pmu = object_property_get_bool(OBJECT(first_cpu), "pmu", NULL);
     steal_time = object_property_get_bool(OBJECT(first_cpu),
                                           "kvm-steal-time", NULL);
-
+    pvdemo = true;
     if (kvm_enabled()) {
         hwaddr pvtime_reg_base = vms->memmap[VIRT_PVTIME].base;
         hwaddr pvtime_reg_size = vms->memmap[VIRT_PVTIME].size;
+        hwaddr pvdemo_reg_base = vms->memmap[VIRT_PVDEMO].base;
+        hwaddr pvdemo_reg_size = vms->memmap[VIRT_PVDEMO].size;
 
         if (steal_time) {
             MemoryRegion *pvtime = g_new(MemoryRegion, 1);
@@ -2166,6 +2170,25 @@ static void virt_post_cpus_gic_realized(VirtMachineState *vms,
             memory_region_init_ram(pvtime, NULL, "pvtime", pvtime_size, NULL);
             memory_region_add_subregion(sysmem, pvtime_reg_base, pvtime);
         }
+        if (pvdemo) {
+            MemoryRegion *pvdemo_region = g_new(MemoryRegion, 1);
+            hwaddr pvdemo_size = max_cpus * PVDEMO_SIZE_PER_CPU;
+
+            pvdemo_size = REAL_HOST_PAGE_ALIGN(pvdemo_size);
+
+            if (pvdemo_size > pvdemo_reg_size) {
+                error_report("pvdemo requires a %" HWADDR_PRId
+                             " byte memory region for %d CPUs,"
+                             " but only %" HWADDR_PRId " has been reserved",
+                             pvdemo_size, max_cpus, pvdemo_reg_size);
+                exit(1);
+            }
+
+            memory_region_init_ram(pvdemo_region, NULL, "pvdemo", 
+                                   pvdemo_size, NULL);
+            memory_region_add_subregion(sysmem, pvdemo_reg_base, 
+                                        pvdemo_region);
+        }
         if (!aarch64 && vms->virt) {
             error_report("KVM does not support EL2 on an AArch32 vCPU");
             exit(1);
@@ -2183,6 +2206,11 @@ static void virt_post_cpus_gic_realized(VirtMachineState *vms,
                 kvm_arm_pvtime_init(ARM_CPU(cpu), pvtime_reg_base
                                                   + cpu->cpu_index
                                                     * PVTIME_SIZE_PER_CPU);
+            }
+            if (pvdemo) {
+                kvm_arm_pvdemo_init(ARM_CPU(cpu), pvdemo_reg_base
+                                                  + cpu->cpu_index
+                                                    * PVDEMO_SIZE_PER_CPU);
             }
         }
     } else {

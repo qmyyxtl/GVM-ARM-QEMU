@@ -432,6 +432,10 @@ enum {
 #define KVM_ARM_VCPU_PVTIME_CTRL	2
 #define   KVM_ARM_VCPU_PVTIME_IPA	0
 
+/* PV Demo control */
+#define KVM_ARM_VCPU_PVDEMO_CTRL	3
+#define   KVM_ARM_VCPU_PVDEMO_IPA	0
+
 /* KVM_IRQ_LINE irq field index values */
 #define KVM_ARM_IRQ_VCPU2_SHIFT		28
 #define KVM_ARM_IRQ_VCPU2_MASK		0xf

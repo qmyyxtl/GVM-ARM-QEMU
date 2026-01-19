@@ -48,6 +48,7 @@
 
 /* See Linux kernel arch/arm64/include/asm/pvclock-abi.h */
 #define PVTIME_SIZE_PER_CPU 64
+#define PVDEMO_SIZE_PER_CPU 64
 
 /* GPIO pins */
 #define GPIO_PIN_POWER_BUTTON  3
@@ -82,6 +83,7 @@ enum {
     VIRT_NVDIMM_ACPI,
     VIRT_PVTIME,
     VIRT_ACPI_PCIHP,
+    VIRT_PVDEMO,
     VIRT_LOWMEMMAP_LAST,
 };
 

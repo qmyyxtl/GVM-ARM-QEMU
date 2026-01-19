@@ -256,6 +256,7 @@ void kvm_arm_pmu_set_irq(ARMCPU *cpu, int irq);
  * Initializes PVTIME for the VCPU, setting the PVTIME IPA to @ipa.
  */
 void kvm_arm_pvtime_init(ARMCPU *cpu, uint64_t ipa);
+void kvm_arm_pvdemo_init(ARMCPU *cpu, uint64_t ipa); 
 
 int kvm_arm_set_irq(int cpu, int irqtype, int irq, int level);
 

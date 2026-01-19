@@ -1817,6 +1817,25 @@ void kvm_arm_pvtime_init(ARMCPU *cpu, uint64_t ipa)
     }
 }
 
+void kvm_arm_pvdemo_init(ARMCPU *cpu, uint64_t ipa)
+{
+    struct kvm_device_attr attr = {
+        .group = KVM_ARM_VCPU_PVDEMO_CTRL, 
+        .attr = KVM_ARM_VCPU_PVDEMO_IPA,
+        .addr = (uint64_t)&ipa,
+    };
+    int ret;
+
+    ret = kvm_vcpu_ioctl(CPU(cpu), KVM_SET_DEVICE_ATTR, &attr);
+    if (ret < 0) {
+        error_report("Failed to init PV demo for CPU %d: %s",
+                     CPU(cpu)->cpu_index, strerror(-ret));
+    } else {
+        printf("PV demo initialized for CPU %d at IPA 0x%lx\n",
+               CPU(cpu)->cpu_index, ipa);
+    }
+}
+
 void kvm_arm_steal_time_finalize(ARMCPU *cpu, Error **errp)
 {
     bool has_steal_time = kvm_check_extension(kvm_state, KVM_CAP_STEAL_TIME);
